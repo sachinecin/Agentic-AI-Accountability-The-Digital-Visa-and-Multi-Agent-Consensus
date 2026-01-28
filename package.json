@@ -1,0 +1,31 @@
+{
+  "name": "digital-visa-protocol",
+  "version": "1.0.0",
+  "description": "Digital Visa protocol with OPA Rego policy and JWT helper",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "test:opa": "opa test policies/"
+  },
+  "keywords": [
+    "digital-visa",
+    "opa",
+    "jwt",
+    "agentic-ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^29.5.11",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/node": "^20.10.6",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "jsonwebtoken": "^9.0.2"
+  }
+}
