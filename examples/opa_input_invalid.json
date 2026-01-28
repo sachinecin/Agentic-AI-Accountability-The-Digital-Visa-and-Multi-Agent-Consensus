@@ -1,0 +1,13 @@
+{
+  "token": {
+    "intent_hash": "abc123",
+    "visa_ttl": 75,
+    "scope": "billing",
+    "constraints": {
+      "max_amount": 200
+    }
+  },
+  "request": {
+    "current_state_hash": "different_hash"
+  }
+}
