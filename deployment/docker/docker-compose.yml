@@ -1,0 +1,169 @@
+version: '3.8'
+
+services:
+  # Policy Decision Point (PDP) Service
+  pdp-service:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.pdp
+    container_name: digital-visa-pdp
+    ports:
+      - "8080:8080"
+    environment:
+      - SERVICE_NAME=pdp-service
+      - LOG_LEVEL=INFO
+    networks:
+      - digital-visa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Policy Enforcement Point (PEP) Service
+  pep-service:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.pep
+    container_name: digital-visa-pep
+    ports:
+      - "8081:8081"
+    environment:
+      - SERVICE_NAME=pep-service
+      - PDP_URL=http://pdp-service:8080
+      - LOG_LEVEL=INFO
+    depends_on:
+      - pdp-service
+    networks:
+      - digital-visa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Agent Registry Service
+  agent-registry:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.registry
+    container_name: digital-visa-registry
+    ports:
+      - "8082:8082"
+    environment:
+      - SERVICE_NAME=agent-registry
+      - LOG_LEVEL=INFO
+    networks:
+      - digital-visa-network
+    volumes:
+      - registry-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Reasoning Trace Store
+  trace-store:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.trace
+    container_name: digital-visa-trace-store
+    ports:
+      - "8083:8083"
+    environment:
+      - SERVICE_NAME=trace-store
+      - LOG_LEVEL=INFO
+    networks:
+      - digital-visa-network
+    volumes:
+      - trace-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Byzantine Consensus Engine
+  consensus-engine:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.consensus
+    container_name: digital-visa-consensus
+    ports:
+      - "8084:8084"
+    environment:
+      - SERVICE_NAME=consensus-engine
+      - LOG_LEVEL=INFO
+    networks:
+      - digital-visa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Example Billing Service
+  billing-service:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile.billing
+    container_name: billing-service
+    ports:
+      - "5001:5001"
+    environment:
+      - SERVICE_NAME=billing-service
+      - PEP_URL=http://pep-service:8081
+      - LOG_LEVEL=INFO
+    depends_on:
+      - pep-service
+    networks:
+      - digital-visa-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # PostgreSQL for trace storage (production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: digital-visa-postgres
+    environment:
+      - POSTGRES_DB=digital_visa
+      - POSTGRES_USER=digital_visa_user
+      - POSTGRES_PASSWORD=changeme_in_production
+    ports:
+      - "5432:5432"
+    networks:
+      - digital-visa-network
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U digital_visa_user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for transaction tracking
+  redis:
+    image: redis:7-alpine
+    container_name: digital-visa-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - digital-visa-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  digital-visa-network:
+    driver: bridge
+
+volumes:
+  registry-data:
+  trace-data:
+  postgres-data:
